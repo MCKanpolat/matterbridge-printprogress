@@ -19,6 +19,7 @@
       "model": "K1C"
     }
   ],
-  "pollingInterval": 3,
+  "pollingInterval": 5,
+  "idlePollingInterval": 15,
   "debug": false
 }

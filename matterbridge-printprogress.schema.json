@@ -32,10 +32,16 @@
       }
     },
     "pollingInterval": {
-      "title": "Polling interval (seconds)",
+      "title": "Polling interval while printing (seconds)",
       "type": "integer",
       "minimum": 1,
-      "default": 3
+      "default": 5
+    },
+    "idlePollingInterval": {
+      "title": "Polling interval while idle or offline (seconds)",
+      "type": "integer",
+      "minimum": 1,
+      "default": 15
     },
     "debug": { "title": "Debug logging", "type": "boolean", "default": false },
     "unregisterOnShutdown": { "type": "boolean", "default": false }

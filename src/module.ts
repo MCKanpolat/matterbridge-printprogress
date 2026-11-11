@@ -28,6 +28,7 @@ export type PrinterConfig = {
 export type PrintProgressConfig = BasePlatformConfig & {
   printers: PrinterConfig[];
   pollingInterval?: number;
+  idlePollingInterval?: number;
   debug?: boolean;
 };
 
@@ -37,6 +38,8 @@ type Printer = {
   light: MatterbridgeEndpoint;
   sensor: MatterbridgeEndpoint;
   last?: Reading | null;
+  timer?: ReturnType<typeof setTimeout>;
+  task?: Promise<void>;
 };
 
 const MAX_LEVEL = 254;
@@ -53,8 +56,8 @@ export default function initializePlugin(
 
 export class PrintProgressPlatform extends MatterbridgeDynamicPlatform {
   private readonly printers: Printer[] = [];
-  private pollTimer?: ReturnType<typeof setInterval>;
-  private pollTask?: Promise<void>;
+  private busyMs = 5000;
+  private idleMs = 15000;
   private stopped = false;
 
   constructor(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PrintProgressConfig) {
@@ -78,23 +81,38 @@ export class PrintProgressPlatform extends MatterbridgeDynamicPlatform {
       }
       this.printers.push(await this.register(entry, entry.type ?? "moonraker"));
     }
-    const interval = Number(config.pollingInterval ?? 3);
-    this.pollTimer = setInterval(
-      () => void this.poll(),
-      (Number.isFinite(interval) ? Math.max(1, interval) : 3) * 1000,
-    );
+    // Poll quickly while printing (progress moves slowly) and rarely while idle.
+    const seconds = (value: unknown, fallback: number): number =>
+      Number.isFinite(Number(value)) && Number(value) >= 1 ? Number(value) : fallback;
+    this.busyMs = seconds(config.pollingInterval, 5) * 1000;
+    this.idleMs = Math.max(this.busyMs, seconds(config.idlePollingInterval, 15) * 1000);
+    for (const printer of this.printers) this.schedule(printer, 0);
+  }
+
+  private schedule(printer: Printer, delay: number): void {
+    if (this.stopped) return;
+    printer.timer = setTimeout(() => {
+      printer.task = this.refresh(printer)
+        .catch(() => undefined)
+        .finally(() => {
+          printer.task = undefined;
+          this.schedule(printer, printer.last?.printing ? this.busyMs : this.idleMs);
+        });
+    }, delay);
   }
 
   override async onConfigure(): Promise<void> {
     await super.onConfigure();
-    await this.poll();
+    await Promise.all(this.printers.map((printer) => this.refresh(printer)));
   }
   override async onChangeLoggerLevel(_logLevel: LogLevel): Promise<void> {}
   override async onShutdown(reason?: string): Promise<void> {
     this.stopped = true;
-    if (this.pollTimer) clearInterval(this.pollTimer);
-    this.pollTimer = undefined;
-    await this.pollTask;
+    for (const printer of this.printers) {
+      clearTimeout(printer.timer);
+      printer.read.close?.();
+    }
+    await Promise.all(this.printers.map((printer) => printer.task));
     this.printers.length = 0;
     await super.onShutdown(reason);
     if (this.config.unregisterOnShutdown) await this.unregisterAllDevices();
@@ -156,17 +174,6 @@ export class PrintProgressPlatform extends MatterbridgeDynamicPlatform {
       if (this.validateDevice([label, id])) await this.registerDevice(endpoint);
     }
     return printer;
-  }
-
-  private poll(): Promise<void> {
-    if (this.stopped) return Promise.resolve();
-    if (!this.pollTask)
-      this.pollTask = Promise.all(this.printers.map((printer) => this.refresh(printer)))
-        .then(() => undefined)
-        .finally(() => {
-          this.pollTask = undefined;
-        });
-    return this.pollTask;
   }
 
   private async refresh(printer: Printer): Promise<void> {

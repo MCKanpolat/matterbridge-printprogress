@@ -1,6 +1,6 @@
 export type Reading = { progress: number; printing: boolean };
 export type PrinterType = "moonraker" | "creality";
-export type Reader = () => Promise<Reading>;
+export type Reader = (() => Promise<Reading>) & { close?: () => void };
 
 type Json = Record<string, any>;
 
@@ -83,63 +83,80 @@ export function moonrakerReader(base: string, apiKey?: string): Reader {
   };
 }
 
+/**
+ * Keeps one WebSocket open per printer and returns the latest cached values.
+ * Reconnects with backoff, so polling costs no network round trip or handshake.
+ */
 export function crealityReader(url: string): Reader {
-  return () =>
-    new Promise<Reading>((resolve, reject) => {
-      const socket = new WebSocket(url);
-      let settled = false;
-      let deviceState: string | undefined;
-      let jobState: string | undefined;
-      let progress: unknown;
-      let jobStateTimer: ReturnType<typeof setTimeout> | undefined;
-      const timer = setTimeout(() => finish(new Error("WebSocket timed out")), 5000);
+  const STALE_MS = 30_000;
+  let socket: WebSocket | undefined;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
+  let retryDelay = 2_000;
+  let closed = false;
+  let deviceState: string | undefined;
+  let progress: unknown;
+  let lastData = 0;
 
-      function finish(error: Error | null, value?: Reading): void {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        clearTimeout(jobStateTimer);
-        socket.close();
-        if (error) reject(error);
-        else resolve(value as Reading);
-      }
-      function finishReading(): void {
-        try {
-          const value = percentage(progress);
-          finish(null, {
-            progress: deviceState === "0" && value < 100 ? 0 : value,
-            printing: deviceState !== "0",
-          });
-        } catch (error) {
-          finish(error as Error);
-        }
-      }
+  const request = JSON.stringify({
+    method: "get",
+    params: { deviceState: 1, printProgress: 1, state: 1 },
+  });
 
-      socket.addEventListener("open", () => {
-        socket.send(
-          JSON.stringify({ method: "get", params: { deviceState: 1, printProgress: 1, state: 1 } }),
-        );
-      });
-      socket.addEventListener("error", () => finish(new Error("WebSocket connection failed")));
-      socket.addEventListener("close", () => finish(new Error("WebSocket connection closed")));
-      socket.addEventListener("message", ({ data }) => {
-        if (data === "heart_beat") {
-          if (socket.readyState === WebSocket.OPEN) socket.send("ok");
-          return;
-        }
-        try {
-          const update = JSON.parse(String(data));
-          if (update?.deviceState != null) deviceState = String(update.deviceState);
-          if (update?.state != null) jobState = String(update.state);
-          if (update?.printProgress != null) progress = update.printProgress;
-        } catch {
-          return;
-        }
-        if (deviceState === undefined || progress === undefined) return;
-        if (jobState !== undefined) finishReading();
-        else jobStateTimer ??= setTimeout(finishReading, 250);
-      });
+  function connect(): void {
+    if (closed || socket) return;
+    const current = new WebSocket(url);
+    socket = current;
+    current.addEventListener("open", () => {
+      retryDelay = 2_000;
+      current.send(request);
     });
+    current.addEventListener("message", ({ data }) => {
+      if (data === "heart_beat") {
+        if (current.readyState === WebSocket.OPEN) current.send("ok");
+        return;
+      }
+      try {
+        const update = JSON.parse(String(data));
+        if (update?.deviceState != null) deviceState = String(update.deviceState);
+        if (update?.printProgress != null) progress = update.printProgress;
+        lastData = Date.now();
+      } catch {
+        // Ignore non-JSON frames.
+      }
+    });
+    const drop = (): void => {
+      if (socket !== current) return;
+      socket = undefined;
+      deviceState = undefined;
+      progress = undefined;
+      if (closed) return;
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(connect, retryDelay);
+      retryDelay = Math.min(retryDelay * 2, 60_000);
+    };
+    current.addEventListener("error", drop);
+    current.addEventListener("close", drop);
+  }
+
+  const read: Reader = async () => {
+    connect();
+    // Ask for a fresh snapshot; the answer lands in the cache for the next read.
+    if (socket?.readyState === WebSocket.OPEN) socket.send(request);
+    if (deviceState === undefined || progress === undefined || Date.now() - lastData > STALE_MS)
+      throw new Error("No data from printer");
+    const value = percentage(progress);
+    return {
+      progress: deviceState === "0" && value < 100 ? 0 : value,
+      printing: deviceState !== "0",
+    };
+  };
+  read.close = () => {
+    closed = true;
+    clearTimeout(retryTimer);
+    socket?.close();
+    socket = undefined;
+  };
+  return read;
 }
 
 export function createReader(type: PrinterType, url: string, apiKey?: string): Reader {
