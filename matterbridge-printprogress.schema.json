@@ -1,0 +1,43 @@
+{
+  "title": "Print Progress",
+  "description": "3D printer print progress as a Matter dimmable light",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "readOnly": true, "ui:widget": "hidden" },
+    "type": { "type": "string", "readOnly": true, "ui:widget": "hidden" },
+    "printers": {
+      "title": "Printers",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "url"],
+        "properties": {
+          "id": { "title": "Id (lowercase letters, numbers, hyphens)", "type": "string" },
+          "name": { "title": "Name", "type": "string" },
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "enum": ["moonraker", "creality"],
+            "default": "moonraker"
+          },
+          "url": { "title": "URL (http for Moonraker, ws for Creality)", "type": "string" },
+          "apiKey": {
+            "title": "Moonraker API key (optional)",
+            "type": "string",
+            "format": "password"
+          },
+          "manufacturer": { "title": "Manufacturer", "type": "string" },
+          "model": { "title": "Model", "type": "string" }
+        }
+      }
+    },
+    "pollingInterval": {
+      "title": "Polling interval (seconds)",
+      "type": "integer",
+      "minimum": 1,
+      "default": 3
+    },
+    "debug": { "title": "Debug logging", "type": "boolean", "default": false },
+    "unregisterOnShutdown": { "type": "boolean", "default": false }
+  }
+}

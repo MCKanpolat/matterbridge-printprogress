@@ -1,0 +1,48 @@
+{
+  "name": "Matterbridge Plugin Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24-trixie",
+  "containerEnv": {
+    "TZ": "${localEnv:TZ}"
+  },
+  "remoteUser": "node",
+  "mounts": [
+    "source=${localWorkspaceFolderBasename}-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume",
+    "source=${localWorkspaceFolderBasename}-cache,target=${containerWorkspaceFolder}/.cache,type=volume",
+    "source=${localWorkspaceFolderBasename}-plugins,target=/home/node/Matterbridge,type=volume",
+    "source=${localWorkspaceFolderBasename}-storage,target=/home/node/.matterbridge,type=volume",
+    "source=${localWorkspaceFolderBasename}-cert,target=/home/node/.mattercert,type=volume",
+    "source=matterbridge,target=/matterbridge,type=volume"
+  ],
+  "initializeCommand": "docker network inspect matterbridge || docker network create matterbridge",
+  "postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
+  "postStartCommand": "bash .devcontainer/postStartCommand.sh",
+  "runArgs": ["--name", "${localWorkspaceFolderBasename}", "--network=matterbridge"],
+  "appPort": [8283],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "typescriptteam.native-preview",
+        "oxc.oxc-vscode",
+        "vitest.explorer",
+        "ms-azuretools.vscode-containers",
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "eslint.enable": false,
+        "prettier.enable": false,
+        "oxc.enable": true,
+        "editor.defaultFormatter": "oxc.oxc-vscode",
+        "editor.formatOnSave": false,
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true,
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/dist": true,
+          "**/.cache": true,
+          "**/coverage": true
+        }
+      }
+    }
+  }
+}

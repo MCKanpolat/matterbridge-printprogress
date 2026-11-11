@@ -1,0 +1,24 @@
+{
+  "name": "matterbridge-printprogress",
+  "type": "DynamicPlatform",
+  "printers": [
+    {
+      "id": "u1",
+      "name": "Snapmaker U1",
+      "type": "moonraker",
+      "url": "http://192.168.1.50",
+      "manufacturer": "Snapmaker",
+      "model": "U1"
+    },
+    {
+      "id": "k1c",
+      "name": "Creality K1C",
+      "type": "creality",
+      "url": "ws://192.168.1.51:9999",
+      "manufacturer": "Creality",
+      "model": "K1C"
+    }
+  ],
+  "pollingInterval": 3,
+  "debug": false
+}

@@ -1,0 +1,66 @@
+{
+  "name": "matterbridge-printprogress",
+  "version": "0.1.0",
+  "description": "Matterbridge plugin exposing 3D printer print progress as a dimmable light and a print status contact sensor",
+  "keywords": [
+    "3d-printer",
+    "creality",
+    "klipper",
+    "matter",
+    "matterbridge",
+    "matterbridge-plugin",
+    "moonraker"
+  ],
+  "homepage": "https://github.com/MCKanpolat/matterbridge-printprogress",
+  "bugs": {
+    "url": "https://github.com/MCKanpolat/matterbridge-printprogress/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "MCKanpolat",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MCKanpolat/matterbridge-printprogress.git"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "matterbridge-printprogress.config.json",
+    "matterbridge-printprogress.schema.json"
+  ],
+  "type": "module",
+  "main": "dist/module.js",
+  "types": "dist/module.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/module.js",
+      "types": "./dist/module.d.ts"
+    }
+  },
+  "scripts": {
+    "start": "matterbridge",
+    "add": "matterbridge --add .",
+    "remove": "matterbridge --remove .",
+    "enable": "matterbridge --enable .",
+    "disable": "matterbridge --disable .",
+    "link": "npm link --no-fund --no-audit matterbridge",
+    "unlink": "npm unlink matterbridge",
+    "build": "tsc --project tsconfig.build.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "lint": "oxlint --disable-nested-config src",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "test": "vitest run --passWithNoTests",
+    "verify": "npm run typecheck && npm run build && npm run lint && npm run format:check && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "matterbridge": ">=3.10.0",
+    "node": ">=22.0.0"
+  }
+}

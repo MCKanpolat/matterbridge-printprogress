@@ -1,0 +1,19 @@
+# Matterbridge plugin template ignores
+.cache/
+build/
+coverage/
+dist/
+node_modules/
+out/
+temp/
+
+*.backup
+*.heapsnapshot
+*.heapprofile
+*.tsbuildinfo
+*.tgz
+*.log
+
+.env
+.env.*
+!.env.example

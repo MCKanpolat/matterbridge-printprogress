@@ -1,0 +1,52 @@
+name: Build and test
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - "eslint.config.js"
+      - ".github/workflows/build.yml"
+  pull_request:
+    branches: [develop]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - "eslint.config.js"
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Node.js ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Matterbridge for type checking
+        run: npm install --no-save --no-package-lock matterbridge@^3.10.0
+
+      - name: Verify plugin
+        run: npm run verify
