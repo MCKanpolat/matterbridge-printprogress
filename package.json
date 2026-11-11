@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-printprogress",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Matterbridge plugin exposing 3D printer print progress as a dimmable light and a print status contact sensor",
   "keywords": [
     "3d-printer",
