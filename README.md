@@ -60,15 +60,15 @@ Moonraker progress follows the position in the G-code file, so it matches what t
 
 ## Install
 
-The package is not on npm yet. Build a tarball and upload it in the Matterbridge web UI.
+In the Matterbridge web UI, type `matterbridge-printprogress` in the plugin field, press **Install**, then restart Matterbridge.
+
+From a terminal on the Matterbridge host:
 
 ```bash
-npm install
-npm run build
-npm pack
+matterbridge -add matterbridge-printprogress
 ```
 
-In Matterbridge, press **Upload**, choose `matterbridge-printprogress-<version>.tgz`, then restart Matterbridge.
+To install a build from source instead, run `npm install`, `npm run build` and `npm pack`, then press **Upload** in Matterbridge and choose the tarball.
 
 ## Configure
 
