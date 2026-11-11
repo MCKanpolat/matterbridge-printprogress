@@ -2,7 +2,7 @@ name: Build and test
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
     paths:
       - "src/**"
       - "package.json"
@@ -11,7 +11,7 @@ on:
       - "eslint.config.js"
       - ".github/workflows/build.yml"
   pull_request:
-    branches: [develop]
+    branches: [main]
     paths:
       - "src/**"
       - "package.json"

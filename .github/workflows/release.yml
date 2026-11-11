@@ -35,7 +35,7 @@ jobs:
     name: Calculate version and create GitHub Release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout develop branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -78,10 +78,14 @@ jobs:
           git add package.json package-lock.json
           git commit -m "chore: release v$VERSION [skip ci]"
           git tag "v$VERSION"
-          git push origin HEAD:develop
+          git push origin HEAD:main
           git push origin "v$VERSION"
 
       - name: Publish package to npm
+        # NPM_TOKEN is only needed for the very first publish. After the npm Trusted
+        # Publisher is configured, delete the secret and the env block below.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
 
       - name: Create GitHub Release
