@@ -81,12 +81,13 @@ jobs:
           git push origin HEAD:main
           git push origin "v$VERSION"
 
-      - name: Publish package to npm
-        # NPM_TOKEN is only needed for the very first publish. After the npm Trusted
-        # Publisher is configured, delete the secret and the env block below.
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+      - name: Update npm for staged publishing
+        run: npm install -g npm@^11.15.0
+
+      # Stages the release through Trusted Publishing (OIDC, no token). A maintainer
+      # then approves it with 2FA on npmjs.com under Staged Packages.
+      - name: Stage package on npm
+        run: npm stage publish --access public
 
       - name: Create GitHub Release
         env:
