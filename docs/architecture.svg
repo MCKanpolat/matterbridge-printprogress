@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 340" role="img" aria-labelledby="t d">
+  <title id="t">Print progress data flow</title>
+  <desc id="d">Moonraker and Creality printers are read by the Matterbridge plugin, which publishes a dimmable light and a contact sensor over Matter to Apple Home.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#64748b"/>
+    </marker>
+    <style>
+      .bg{fill:#f8fafc}
+      .box{fill:#fff;stroke:#cbd5e1;stroke-width:1.5}
+      .hot{fill:#eff6ff;stroke:#3b82f6;stroke-width:2}
+      .h{font:600 16px system-ui,Segoe UI,Arial,sans-serif;fill:#0f172a}
+      .s{font:13px system-ui,Segoe UI,Arial,sans-serif;fill:#475569}
+      .l{font:12px system-ui,Segoe UI,Arial,sans-serif;fill:#334155}
+      .arrow{stroke:#64748b;stroke-width:2;fill:none}
+    </style>
+  </defs>
+  <rect class="bg" width="960" height="340" rx="14"/>
+
+  <rect class="box" x="30" y="40" width="230" height="110" rx="10"/>
+  <text class="h" x="50" y="72">Klipper printer</text>
+  <text class="s" x="50" y="96">Moonraker HTTP API</text>
+  <text class="s" x="50" y="118">polled every 5 s while printing</text>
+
+  <rect class="box" x="30" y="190" width="230" height="110" rx="10"/>
+  <text class="h" x="50" y="222">Creality printer</text>
+  <text class="s" x="50" y="246">Creality WebSocket API</text>
+  <text class="s" x="50" y="268">one open connection</text>
+
+  <rect class="hot" x="360" y="70" width="240" height="200" rx="12"/>
+  <text class="h" x="380" y="104">matterbridge-</text>
+  <text class="h" x="380" y="124">printprogress</text>
+  <text class="s" x="380" y="154">reads progress and job state</text>
+  <text class="s" x="380" y="176">maps them to Matter clusters</text>
+  <text class="s" x="380" y="206">runs inside Matterbridge</text>
+  <text class="s" x="380" y="228">on the SONOFF iHost</text>
+
+  <rect class="box" x="700" y="40" width="230" height="110" rx="10"/>
+  <text class="h" x="720" y="72">Print Progress</text>
+  <text class="s" x="720" y="96">Dimmable light</text>
+  <text class="s" x="720" y="118">brightness = percent done</text>
+
+  <rect class="box" x="700" y="190" width="230" height="110" rx="10"/>
+  <text class="h" x="720" y="222">Print Status</text>
+  <text class="s" x="720" y="246">Contact sensor</text>
+  <text class="s" x="720" y="268">open = printing</text>
+
+  <path class="arrow" d="M260 95H360" marker-end="url(#a)"/>
+  <path class="arrow" d="M260 245H360" marker-end="url(#a)"/>
+  <path class="arrow" d="M600 130L700 95" marker-end="url(#a)"/>
+  <path class="arrow" d="M600 210L700 245" marker-end="url(#a)"/>
+  <text class="l" x="620" y="326" text-anchor="middle">Matter, direct to Apple Home</text>
+</svg>

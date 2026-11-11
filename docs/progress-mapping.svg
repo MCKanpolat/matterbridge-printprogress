@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" role="img" aria-labelledby="t d">
+  <title id="t">How print progress appears in Apple Home</title>
+  <desc id="d">Three example states: idle at 0 percent, printing at 57 percent, and a finished print at 100 percent, each with the light brightness and the status sensor state.</desc>
+  <defs>
+    <style>
+      .bg{fill:#f8fafc}
+      .card{fill:#fff;stroke:#cbd5e1;stroke-width:1.5}
+      .h{font:600 16px system-ui,Segoe UI,Arial,sans-serif;fill:#0f172a}
+      .s{font:13px system-ui,Segoe UI,Arial,sans-serif;fill:#475569}
+      .big{font:700 30px system-ui,Segoe UI,Arial,sans-serif;fill:#0f172a}
+      .track{fill:#e2e8f0}
+      .fill{fill:#f59e0b}
+      .on{fill:#16a34a}
+      .off{fill:#94a3b8}
+    </style>
+  </defs>
+  <rect class="bg" width="960" height="300" rx="14"/>
+
+  <g>
+    <rect class="card" x="30" y="30" width="280" height="240" rx="12"/>
+    <text class="h" x="50" y="62">Idle</text>
+    <text class="big" x="50" y="112">0%</text>
+    <rect class="track" x="50" y="130" width="240" height="14" rx="7"/>
+    <text class="s" x="50" y="176">Print Progress: light off</text>
+    <circle class="off" cx="58" cy="206" r="7"/>
+    <text class="s" x="74" y="211">Print Status: closed</text>
+    <text class="s" x="50" y="244">No job running</text>
+  </g>
+
+  <g>
+    <rect class="card" x="340" y="30" width="280" height="240" rx="12"/>
+    <text class="h" x="360" y="62">Printing</text>
+    <text class="big" x="360" y="112">57%</text>
+    <rect class="track" x="360" y="130" width="240" height="14" rx="7"/>
+    <rect class="fill" x="360" y="130" width="137" height="14" rx="7"/>
+    <text class="s" x="360" y="176">Print Progress: light on, 57%</text>
+    <circle class="on" cx="368" cy="206" r="7"/>
+    <text class="s" x="384" y="211">Print Status: open</text>
+    <text class="s" x="360" y="244">Progress moves as the job runs</text>
+  </g>
+
+  <g>
+    <rect class="card" x="650" y="30" width="280" height="240" rx="12"/>
+    <text class="h" x="670" y="62">Finished</text>
+    <text class="big" x="670" y="112">100%</text>
+    <rect class="track" x="670" y="130" width="240" height="14" rx="7"/>
+    <rect class="fill" x="670" y="130" width="240" height="14" rx="7"/>
+    <text class="s" x="670" y="176">Print Progress: light on, 100%</text>
+    <circle class="off" cx="678" cy="206" r="7"/>
+    <text class="s" x="694" y="211">Print Status: closed</text>
+    <text class="s" x="670" y="244">Automation fires when it closes</text>
+  </g>
+</svg>
