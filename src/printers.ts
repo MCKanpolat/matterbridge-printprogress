@@ -142,6 +142,9 @@ export function crealityReader(url: string): Reader {
     connect();
     // Ask for a fresh snapshot; the answer lands in the cache for the next read.
     if (socket?.readyState === WebSocket.OPEN) socket.send(request);
+    // Right after connecting there is no data yet: wait briefly for the first snapshot.
+    for (let i = 0; i < 30 && (deviceState === undefined || progress === undefined); i++)
+      await new Promise((resolve) => setTimeout(resolve, 100));
     if (deviceState === undefined || progress === undefined || Date.now() - lastData > STALE_MS)
       throw new Error("No data from printer");
     const value = percentage(progress);
