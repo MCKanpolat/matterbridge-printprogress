@@ -206,7 +206,8 @@ export class PrintProgressPlatform extends MatterbridgeDynamicPlatform {
         await endpoint.setAttribute(BridgedDeviceBasicInformation, "reachable", online, this.log);
     }
     if (!reading) return;
-    const on = reading.progress > 0;
+    // On while printing, even at 0%, so a running print never looks like an idle printer.
+    const on = reading.printing || reading.progress > 0;
     if (printer.light.getAttribute(OnOff, "onOff") !== on)
       await printer.light.setAttribute(OnOff, "onOff", on, this.log);
     const level = toLevel(reading.progress);

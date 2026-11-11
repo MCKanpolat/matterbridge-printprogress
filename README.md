@@ -8,10 +8,11 @@ See your 3D printers' progress in Apple Home, live, as a normal Matter dimmable 
 
 The goal is simple: open the Home app and see how far a print is, and run an automation when a print ends.
 
-Matter has no "print progress" device, so the plugin uses two standard ones:
+Matter has no "print progress" device, so the plugin uses standard ones:
 
 - a **dimmable light** whose brightness is the percentage done
 - a **contact sensor** that tells you whether a print is running
+- a second **contact sensor** that opens only when a print finishes successfully
 
 This plugin grew out of [printpercent](https://github.com/MCKanpolat/printpercent), which published the same two accessories through the SONOFF iHost Matter Bridge. That bridge does not forward brightness changes from third-party devices, so Apple Home kept showing a stale value. Matterbridge talks Matter itself, and Apple Home updates live.
 
@@ -21,8 +22,9 @@ For every printer you configure:
 
 | Matter device      | Type           | Meaning                                                                                             |
 | ------------------ | -------------- | --------------------------------------------------------------------------------------------------- |
-| **Print Progress** | Dimmable light | Brightness equals percent complete. Off at 0%.                                                      |
+| **Print Progress** | Dimmable light | Brightness equals percent complete. On while printing, off when idle.                               |
 | **Print Status**   | Contact sensor | **Open** while a print is running or paused. **Closed** when idle, finished, cancelled or in error. |
+| **Print Finished** | Contact sensor | **Opens** when a print completes successfully. **Closes** when the next print starts.               |
 
 ![Idle, printing and finished states](docs/progress-mapping.svg)
 
@@ -38,7 +40,13 @@ stateDiagram-v2
     Open --> Closed: finished, cancelled or error
 ```
 
-Build a "print finished" automation in Apple Home with **A Sensor Detects Something**, then choose **Print Status** and **Closes**. It also fires on cancelled prints.
+### Print finished automation
+
+Build the automation in Apple Home with **A Sensor Detects Something**, then choose **Print Finished** and **Opens**. It fires only after a successful print. Cancelled prints and errors do not trigger it.
+
+Print Finished opens only when the plugin sees a print go from running to completed. Restarting Matterbridge, or a printer that was already finished at startup, never fires it.
+
+To react to any end of print, including cancelled ones, use **Print Status** and **Closes** instead.
 
 ## Supported printers
 
@@ -102,7 +110,7 @@ Open the plugin's settings in Matterbridge, or edit `matterbridge-printprogress.
 | Setting               | Default     | Meaning                                                                                                    |
 | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
 | `printers[].id`       | required    | Unique id, letters, numbers and hyphens. It becomes the device serial, so changing it creates new devices. |
-| `printers[].name`     | required    | Base name. Devices are called `<name> Print Progress` and `<name> Print Status`.                           |
+| `printers[].name`     | required    | Base name. Devices are called `<name> Print Progress`, `<name> Print Status` and `<name> Print Finished`.  |
 | `printers[].type`     | `moonraker` | `moonraker` or `creality`.                                                                                 |
 | `printers[].url`      | required    | `http(s)` for Moonraker, `ws(s)` for Creality.                                                             |
 | `printers[].apiKey`   | none        | Moonraker API key, only if your instance needs one.                                                        |
