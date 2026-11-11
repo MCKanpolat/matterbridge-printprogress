@@ -37,6 +37,9 @@ type Printer = {
   read: Reader;
   light: MatterbridgeEndpoint;
   sensor: MatterbridgeEndpoint;
+  done: MatterbridgeEndpoint;
+  wasPrinting: boolean;
+  finishedOpen: boolean;
   last?: Reading | null;
   timer?: ReturnType<typeof setTimeout>;
   task?: Promise<void>;
@@ -123,6 +126,7 @@ export class PrintProgressPlatform extends MatterbridgeDynamicPlatform {
     const model = entry.model || "Print Progress";
     const progressName = `${entry.name} Print Progress`;
     const statusName = `${entry.name} Print Status`;
+    const finishedName = `${entry.name} Print Finished`;
 
     // The progress light is read-only: any command is undone on the next refresh.
     const restore = (): void => void setTimeout(() => void this.refresh(printer), 300);
@@ -145,29 +149,38 @@ export class PrintProgressPlatform extends MatterbridgeDynamicPlatform {
       .addCommandHandler("moveToLevel", restore)
       .addCommandHandler("moveToLevelWithOnOff", restore);
 
-    // Matter BooleanState: true means contact (closed). Open means printing.
-    const sensor = new MatterbridgeEndpoint(contactSensor, { id: `${entry.id}-status` })
-      .createDefaultBridgedDeviceBasicInformationClusterServer(
-        statusName,
-        `${entry.id}-status`,
-        this.matterbridge.aggregatorVendorId,
-        manufacturer,
-        model,
-        10000,
-        "1.0.0",
-      )
-      .createDefaultBooleanStateClusterServer(true)
-      .addRequiredClusters();
+    // Matter BooleanState: true means contact (closed).
+    const contact = (suffix: string, label: string): MatterbridgeEndpoint =>
+      new MatterbridgeEndpoint(contactSensor, { id: `${entry.id}-${suffix}` })
+        .createDefaultBridgedDeviceBasicInformationClusterServer(
+          label,
+          `${entry.id}-${suffix}`,
+          this.matterbridge.aggregatorVendorId,
+          manufacturer,
+          model,
+          10000,
+          "1.0.0",
+        )
+        .createDefaultBooleanStateClusterServer(true)
+        .addRequiredClusters();
+    // Print Status: open while printing.
+    const sensor = contact("status", statusName);
+    // Print Finished: opens only when a print completes successfully.
+    const done = contact("finished", finishedName);
 
     const printer: Printer = {
       config: entry,
       read: createReader(type, entry.url, entry.apiKey),
       light,
       sensor,
+      done,
+      wasPrinting: false,
+      finishedOpen: false,
     };
     for (const [endpoint, label] of [
       [light, progressName],
       [sensor, statusName],
+      [done, finishedName],
     ] as const) {
       const id = endpoint.id ?? label;
       this.setSelectDevice(id, label);
@@ -195,13 +208,27 @@ export class PrintProgressPlatform extends MatterbridgeDynamicPlatform {
       this.log.info(
         `${printer.config.name}: ${reading.progress}%${reading.printing ? " (printing)" : ""}`,
       );
+    if (reading) {
+      // Open "finished" only on a real printing -> completed transition seen while
+      // running, so restarting the plugin never fires a stale completion.
+      if (reading.printing) {
+        printer.wasPrinting = true;
+        printer.finishedOpen = false;
+      } else {
+        if (printer.wasPrinting && reading.finished) {
+          printer.finishedOpen = true;
+          this.log.info(`${printer.config.name}: print finished`);
+        }
+        printer.wasPrinting = false;
+      }
+    }
     printer.last = reading;
     await this.apply(printer, reading);
   }
 
   private async apply(printer: Printer, reading: Reading | null): Promise<void> {
     const online = reading !== null;
-    for (const endpoint of [printer.light, printer.sensor]) {
+    for (const endpoint of [printer.light, printer.sensor, printer.done]) {
       if (endpoint.getAttribute(BridgedDeviceBasicInformation, "reachable") !== online)
         await endpoint.setAttribute(BridgedDeviceBasicInformation, "reachable", online, this.log);
     }
@@ -216,5 +243,8 @@ export class PrintProgressPlatform extends MatterbridgeDynamicPlatform {
     const contact = !reading.printing;
     if (printer.sensor.getAttribute(BooleanState, "stateValue") !== contact)
       await printer.sensor.setAttribute(BooleanState, "stateValue", contact, this.log);
+    const doneContact = !printer.finishedOpen;
+    if (printer.done.getAttribute(BooleanState, "stateValue") !== doneContact)
+      await printer.done.setAttribute(BooleanState, "stateValue", doneContact, this.log);
   }
 }

@@ -1,4 +1,5 @@
-export type Reading = { progress: number; printing: boolean };
+/** `finished` is true only while the printer reports a successfully completed job. */
+export type Reading = { progress: number; printing: boolean; finished: boolean };
 export type PrinterType = "moonraker" | "creality";
 export type Reader = (() => Promise<Reading>) & { close?: () => void };
 
@@ -39,7 +40,11 @@ export function moonrakerReader(base: string, apiKey?: string): Reader {
     const { state, filename } = status?.print_stats ?? {};
     if (state === "complete" || state === "standby" || state === "cancelled") {
       cachedFile = undefined;
-      return { progress: state === "complete" ? 100 : 0, printing: false };
+      return {
+        progress: state === "complete" ? 100 : 0,
+        printing: false,
+        finished: state === "complete",
+      };
     }
     if (state !== "printing" && state !== "paused" && state !== "error")
       throw new Error("Could not read Moonraker print status");
@@ -79,7 +84,7 @@ export function moonrakerReader(base: string, apiKey?: string): Reader {
     if (typeof progress === "string" && progress.trim()) progress = Number(progress);
     if (typeof progress !== "number" || !Number.isFinite(progress) || progress < 0 || progress > 1)
       throw new Error("Invalid print progress");
-    return { progress: Math.floor(progress * 100), printing: state !== "error" };
+    return { progress: Math.floor(progress * 100), printing: state !== "error", finished: false };
   };
 }
 
@@ -94,6 +99,7 @@ export function crealityReader(url: string): Reader {
   let retryDelay = 2_000;
   let closed = false;
   let deviceState: string | undefined;
+  let jobState: string | undefined;
   let progress: unknown;
   let lastData = 0;
 
@@ -118,6 +124,7 @@ export function crealityReader(url: string): Reader {
       try {
         const update = JSON.parse(String(data));
         if (update?.deviceState != null) deviceState = String(update.deviceState);
+        if (update?.state != null) jobState = String(update.state);
         if (update?.printProgress != null) progress = update.printProgress;
         lastData = Date.now();
       } catch {
@@ -128,6 +135,7 @@ export function crealityReader(url: string): Reader {
       if (socket !== current) return;
       socket = undefined;
       deviceState = undefined;
+      jobState = undefined;
       progress = undefined;
       if (closed) return;
       clearTimeout(retryTimer);
@@ -151,6 +159,8 @@ export function crealityReader(url: string): Reader {
     return {
       progress: deviceState === "0" && value < 100 ? 0 : value,
       printing: deviceState !== "0",
+      // Creality reports job state 2 for a successfully completed job.
+      finished: jobState === "2",
     };
   };
   read.close = () => {
